@@ -5,7 +5,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // preflight запрос
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Метод не дозволено" });
@@ -22,18 +24,28 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: "Ты полезный ассистент." },
-          { role: "user", content: message }
+          model: "gpt-5",
+          input: [
+            {
+              role: "system",
+              content: "Ты полезный ассистент.",
+            },
+            {
+              role: "user",
+              content: message,
+            },
         ]
       })
     });
 
     const data = await response.json();
     console.log(JSON.stringify(data));
-    res.status(200).json({ reply: data.choices?.[0]?.message?.content || "No response" });
+    res.status(200).json({
+          reply: data.output_text || "No response",
+          raw: data,
+        });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "OpenAI request failed" });
   }
 }
