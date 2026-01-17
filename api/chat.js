@@ -40,12 +40,34 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     console.log(JSON.stringify(data));
+
+    const reply = extractOutputText(data);
+
     res.status(200).json({
-          reply: data.output_text || "No response",
-          raw: data,
-        });
+      reply: reply || "No response",
+      raw: data,
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "OpenAI request failed" });
   }
+}
+
+function extractOutputText(data) {
+  if (data.output_text) return data.output_text;
+
+  if (!Array.isArray(data.output)) return null;
+
+  for (const item of data.output) {
+    if (item.type === "message") {
+      for (const content of item.content || []) {
+        if (content.type === "output_text") {
+          return content.text;
+        }
+      }
+    }
+  }
+
+  return null;
 }
